@@ -88,7 +88,7 @@ Remove version number from a string (NM or ENSEMBL Ids)
 """
 
 def clean_version_number(s):
-    return re.sub('\.[0-9]*$', '', s)
+    return re.sub('\..*$', '', s)
 
 """
 Combined cancer gene atlas with gene id
@@ -148,11 +148,10 @@ return is the variant is driver or not
 def is_driver(variant, db_info, conf_select, conf_vcf):
 
     ## TODO use SEP ? splice_region_variant&non_coding_transcript_exon_variant
-
     # Hotspot
     in_databases = is_hotspot(variant, infos=db_info, flags=conf_vcf['cancer_db'])
     for r in conf_select:
-        if 'is_hotspot' in r and not in_databases:
+        if r['is_hotspot'] and not in_databases:
             return False
         if variant[conf_vcf['annot_info']] in r['var_classes']:
             return True
@@ -177,7 +176,6 @@ def is_polym(v, infos, flags, val):
     for key in sub_INFO:
         if type(sub_INFO[key]) is tuple:
             for i in sub_INFO[key]:
-                print(sub_INFO[key])
                 if i is not None and i != ".":
                     if float(i) >= float(val):
                         return True
@@ -405,7 +403,6 @@ if __name__ == "__main__":
                 for annot in annot_info:
                     gene_id = annot[vcf_conf['gene_id']]
                     transcript_id=clean_version_number(annot[vcf_conf['transcript_id']])
-                
                     gene_type = get_gene_type(gene_id, driver_genes)
                     is_driver_mut = False
                     if gene_type is not None:
@@ -419,6 +416,8 @@ if __name__ == "__main__":
                                     __DEBUGINFO__ = ",".join(x for x in [__DEBUGINFO__, "NON_DRIVER"] if x is not None)
                                     continue
                             else:
+                                if args.debug:
+                                    __DEBUGINFO__ = str(is_driver_mut)
                                 driver_counter += 1
                                 break
                     elif args.debug:
@@ -432,8 +431,6 @@ if __name__ == "__main__":
             if args.debug:
                 if __DEBUGINFO__ is not None:
                     variant.INFO["ONCODRIVER"] = __DEBUGINFO__
-                else:
-                    variant.INFO["ONCODRIVER"] = str(is_driver_mut)
                 print(variant)
                 wx.write_record(variant)
             elif is_driver_mut is True:
