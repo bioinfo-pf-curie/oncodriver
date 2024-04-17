@@ -148,6 +148,7 @@ return is the variant is driver or not
 def is_driver(variant, db_info, conf_select, conf_vcf):
 
     ## TODO use SEP ? splice_region_variant&non_coding_transcript_exon_variant
+
     # Hotspot
     in_databases = is_hotspot(variant, infos=db_info, flags=conf_vcf['cancer_db'])
     for r in conf_select:
@@ -279,9 +280,10 @@ def args_parse():
     parser.add_argument("--canonical_ids", help="File with canonical IDs information", type=str, default=None)
     
     # Driver genes
-    parser.add_argument("--oncoKB_genes", help="Cancer gene list from oncoKB", type=str, required=True)
+    parser.add_argument("--driver_genes", help="Cancer gene list from oncoKB", type=str, required=True)
     
     # Others
+    parser.add_argument("--output", help="Output file name", type=str)
     parser.add_argument("--verbose", help="Active verbose mode", action="store_true")
     parser.add_argument("--debug", help="Export original VCF with TMB_FILTER tag", action="store_true")
     parser.add_argument("--version", help="Version number", action='version', version="%(prog)s ("+__version__+")")
@@ -315,20 +317,23 @@ if __name__ == "__main__":
         sys.exit(-1)
         
     # Outputs
-    if args.debug:
-        vcf.add_info_to_header({'ID': 'ONCODRIVER', 'Description': 'Is an oncogenic driver',
-                                'Type': 'Character', 'Number': '1'})
+    vcf.add_info_to_header({'ID': 'ONCODRIVER', 'Description': 'Oncogenic driver decision',
+                            'Type': 'Character', 'Number': '1'})
 
-    wx = cyvcf2.Writer(re.sub(r'\.vcf$|\.vcf.gz$|\.bcf',
-                              '_oncoDriver.vcf.gz', os.path.basename(args.vcf)), vcf)
+    if args.output:
+        wx = cyvcf2.writer(args.output, vcf)
+    else:
+        wx = cyvcf2.Writer(re.sub(r'\.vcf$|\.vcf.gz$|\.bcf',
+                                  '_oncoDriver.vcf.gz', os.path.basename(args.vcf)), vcf)
     
+
     # Load config
     conf = load_config(args.config)
     select_algo = conf['select']
     vcf_conf = conf['vcf']
  
     # Load cancer genes
-    driver_genes = load_cancer_genes_list(args.oncoKB_genes)
+    driver_genes = load_cancer_genes_list(args.driver_genes)
 
     # Load canonical Ids
     can_ids = None
@@ -341,6 +346,7 @@ if __name__ == "__main__":
         
     for variant in vcf:
         __DEBUGINFO__ = None
+        __DRIVERINFOR__ = None
         var_counter += 1
         if (var_counter % 1000 == 0 and args.verbose):
             print ("## ", var_counter)
@@ -411,6 +417,7 @@ if __name__ == "__main__":
                             continue
                         elif not args.use_canonical or (args.use_canonical and transcript_id in can_ids[gene_id]):
                             is_driver_mut = is_driver(annot, db_info, select_algo[(gene_type, 'snv')], vcf_conf)
+                            __DRIVERINFO__ = gene_type + "," + transcript_id + "," + annot[vcf_conf['annot_info']]
                             if not is_driver_mut:
                                 if args.debug:
                                     __DEBUGINFO__ = ",".join(x for x in [__DEBUGINFO__, "NON_DRIVER"] if x is not None)
@@ -430,10 +437,11 @@ if __name__ == "__main__":
 
             if args.debug:
                 if __DEBUGINFO__ is not None:
-                    variant.INFO["ONCODRIVER"] = __DEBUGINFO__
+                    variant.INFO['ONCODRIVER'] = __DEBUGINFO__
                 print(variant)
                 wx.write_record(variant)
             elif is_driver_mut is True:
+                variant.INFO['ONCODRIVER'] = __DRIVERINFO__
                 print(variant)
                 wx.write_record(variant)
 
@@ -453,7 +461,7 @@ if __name__ == "__main__":
     print("## Sample=", args.sample, file=sys.stderr)
     print("")
     print("## Config=", args.config, file=sys.stderr)
-    print("## oncoKB genes=", args.oncoKB_genes, file=sys.stderr)
+    print("## Driver genes=", args.driver_genes, file=sys.stderr)
     print("## Use canonical=", args.use_canonical, file=sys.stderr)
     print("## Canonical genes=", args.canonical_ids, file=sys.stderr)
     print("")
