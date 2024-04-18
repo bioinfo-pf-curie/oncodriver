@@ -18,6 +18,7 @@ vcf:
   cancer_db:
     - 'ICGC'
     - 'CancerHotspots'
+    - 'COSMIC'
   polym_db:
     gnomAD:
       - AF
