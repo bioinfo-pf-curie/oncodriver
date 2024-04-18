@@ -321,7 +321,7 @@ if __name__ == "__main__":
                             'Type': 'Character', 'Number': '1'})
 
     if args.output:
-        wx = cyvcf2.writer(args.output, vcf)
+        wx = cyvcf2.Writer(args.output, vcf)
     else:
         wx = cyvcf2.Writer(re.sub(r'\.vcf$|\.vcf.gz$|\.bcf',
                                   '_oncoDriver.vcf.gz', os.path.basename(args.vcf)), vcf)
