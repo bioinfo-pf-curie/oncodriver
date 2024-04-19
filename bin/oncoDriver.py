@@ -13,7 +13,7 @@
 #
 ##############################################################################
 
-__version__ = '1.0.0dev'
+__version__ = '1.0.1dev'
 
 """
 This script is designed to apply a decision tree on a VCF file
@@ -147,15 +147,19 @@ return is the variant is driver or not
 
 def is_driver(variant, db_info, conf_select, conf_vcf):
 
-    ## TODO use SEP ? splice_region_variant&non_coding_transcript_exon_variant
+    ## Separate information using sep
+    var_info = variant[conf_vcf['annot_info']]
+    if conf_vcf['sep'] is not None:
+        var_info = var_info.split(conf_vcf['sep'])
 
     # Hotspot
     in_databases = is_hotspot(variant, infos=db_info, flags=conf_vcf['cancer_db'])
     for r in conf_select:
         if r['is_hotspot'] and not in_databases:
             return False
-        if variant[conf_vcf['annot_info']] in r['var_classes']:
-            return True
+        for v in var_info:
+            if v in r['var_classes']:
+                return True
     return False
 
 
