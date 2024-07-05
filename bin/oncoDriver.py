@@ -46,7 +46,8 @@ def load_config(infile):
     with open(infile, 'r') as stream:
         try:
             data=yaml.safe_load(stream)
-            cfg['vcf'] = data['vcf'] 
+            cfg['vcf'] = data['vcf']
+            cfg['cnv'] = data['cnv']
             d={}
             for info in data['select']:
                 k=(info['gene_type'],info['var_type'])
@@ -164,6 +165,20 @@ def is_driver(variant, db_info, conf_select, conf_vcf):
 
 
 """
+CNV decision tree 
+"""
+
+def is_driver_cnv(gene_type, var_class, length, conf_select):
+
+    for r in conf_select:
+        if var_class in r['var_classes']:            
+            if r['maxsize'] is not None and length > r['maxsize']:
+                return False
+            return True
+        return False
+
+
+"""
 Check if a variant is in a genomeDb with a MAF > val
 """
 
@@ -268,6 +283,7 @@ def args_parse():
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-i", "--vcf", required=True, help="Input file (.vcf, .vcf.gz, .bcf)")
+    parser.add_argument("--cnv", help="Input file for CNV (segments.transformed_annot_oncokb.txt)", default=None)
 
     # Configs
     parser.add_argument("--config", help="Decision tree config file", type=str, required=True)
@@ -335,7 +351,8 @@ if __name__ == "__main__":
     conf = load_config(args.config)
     select_algo = conf['select']
     vcf_conf = conf['vcf']
- 
+    cnv_conf = conf['cnv']
+
     # Load cancer genes
     driver_genes = load_cancer_genes_list(args.driver_genes)
 
@@ -453,6 +470,35 @@ if __name__ == "__main__":
             warnflag = str(variant.CHROM) + ":" + str(variant.start) + "-" + str(variant.end)
             warnings.warn("Warning : variant {} raises an error. Skipped so far ...".format(warnflag))
             raise
+
+    if args.cnv is not None:
+        with open(args.cnv, "r", encoding="utf8") as csvfile:
+            csv_reader = csv.reader(csvfile, delimiter="\t")
+            header = next(csv_reader)
+            header.append('Driver_status')
+            
+            with open('output.csv', mode='w', newline='') as outfile:
+                writer = csv.writer(outfile)
+
+                # Write the new header to the output file
+                writer.writerow(header)
+
+                for row in csv_reader:
+                    driver_status = 'NotDriver'
+                    if "ID" not in row:
+                        
+                        gene_id = row[cnv_conf['gene_id']]
+                        gene_type = get_gene_type(gene_id, driver_genes)
+                        var_class = row[cnv_conf['class']]
+                        length = int(row[cnv_conf['end']])-int(cnv_conf['start'])
+                        
+                        if gene_type is not None: 
+                            is_driver_mut = is_driver_cnv(gene_type, var_class, length, select_algo[(gene_type, 'cnv' )])
+                            if is_driver_mut: 
+                                driver_status = 'Driver'
+                    row.append(driver_status)
+                    writer.writerow(row)
+
 
     wx.close()
     vcf.close()
