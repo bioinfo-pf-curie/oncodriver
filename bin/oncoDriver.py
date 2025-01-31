@@ -13,7 +13,7 @@
 #
 ##############################################################################
 
-__version__ = '1.0.1dev'
+__version__ = '1.2.0dev'
 
 """
 This script is designed to apply a decision tree on a VCF file
