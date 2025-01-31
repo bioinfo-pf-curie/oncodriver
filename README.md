@@ -3,12 +3,11 @@
 [![Install with conda](https://img.shields.io/badge/install%20with-conda-brightgreen.svg)](https://conda.anaconda.org/anaconda)
 
 
-*Oncodriver*
+**Filter variants (single nucleotide variants and/or copy number) and select drivers events of clinical interest.**
 
-Filter variants (single nucleotide variants and/or copy number) and select drivers events of clinical interest.
-
-The main idea is *oncodriver* is to apply a selection algorithm describing which variants should be considered as clinically relevant.
+The main idea is **oncodriver** is to apply a selection algorithm describing which somatic variants should be considered as clinically relevant.
 The selection rules can be different according to the gene types (oncogenes, tumor suppressor, etc.), and whether the variants is known in cancer databases.
+The tool can also focus on variants occuring on canonical transcripts only (as defined by the MANE project for instance)
 The rules are defined in a `yaml` file, and vary according to the variant annotations.
 
 ### Quick Help
@@ -31,10 +30,10 @@ options:
   --canonical_ids CANONICAL_IDS  File with canonical IDs information (default: None)
   --driver_genes DRIVER_GENES    Cancer gene list from oncoKB (default: None)
   --output OUTPUT                Output file name (default: None)
+  --outputcnv OUTPUTCNV          CNV output file name (default: None)
   --verbose                      Active verbose mode (default: False)
   --debug                        Export original VCF with TMB_FILTER tag (default: False)
   --version                      Version number
-  --outputcnv OUTPUTCNV          CNV output file name (default: None)
 ```
 
 
@@ -55,6 +54,74 @@ python oncoDriver.py \
 SNVs variants are expected to be in `vcf.gz` format. The variants must be annotated with `snpEff` or `VEP`.
 
 The CNV variants are expected to be in a txt format.
+
+### Configuration file
+
+The decision algorithm is written in a `yaml` file which can be customized according to your criteria.
+A few section are mandatory.
+
+- `vcf`: define where to find some information in the `vcf` file format
+
+Here is an example to parse the annotation from `snpEff`:
+
+```
+- vcf
+  tag: 'ANN'
+  sep: '&'
+  vaf: 'AF'
+ depth: 'DP'
+  alt_depth: 'AD'
+  annot_info: 1
+  gene_id: 3
+  transcript_id : 6
+  cancer_db:
+    - 'ICGC'
+    - 'CancerHotspots'
+    - 'COSMIC'
+  polym_db:
+    gnomAD:
+      - AF
+```
+
+- `cnv`: define how to parse the txt file with copy number information
+
+```
+cnv:
+  gene_id: 10
+  class: 8
+  start: 1
+  end: 2
+```
+
+- `select`: describe the rules to consider a variant as driver.
+
+Those rules usually contain the following information:
+- `var_type`: must be `snv` or `cnv`
+- `gene_type`: must be `oncogenes`, `tsg`, `both` or `unknown`. Of note, multiple gene type can be considered, separated by a `|` character.
+- `var_classes`: list here all type of variants to consider as driver
+- `is_hotspot`: define whether the variant must be (or not) annotated at least on of the databases define in `cancer_db`
+
+
+For instance ; *I would like to consider as driver all misense variants occuring on a oncogene, and known in the cancer databases*
+will be translated into ;
+
+```
+  - var_type: 'snv'
+    gene_type: 'oncogene'
+    var_classes:
+      - missense_variant
+    is_hotspot: true
+```
+
+In order to rescue a few variants which are on specific genes, such as for instance TERT mutation in the promoter region, the selection can also be applied by `gene_id`.
+For instance, to select the variants occuring in the TERT promoter region, you can use;
+
+```
+  - var_type: 'snv'
+    gene_id: 'TERT'
+    var_classes:
+      - upstream_gene_variant
+```
 
 ### Output
 

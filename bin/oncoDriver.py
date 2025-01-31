@@ -336,10 +336,10 @@ def args_parse():
     
     # Others
     parser.add_argument("--output", help="Output file name", type=str)
+    parser.add_argument("--outputcnv", help="CNV output file name", type=str)
     parser.add_argument("--verbose", help="Active verbose mode", action="store_true")
     parser.add_argument("--debug", help="Export original VCF with TMB_FILTER tag", action="store_true")
     parser.add_argument("--version", help="Version number", action='version', version="%(prog)s ("+__version__+")")
-    parser.add_argument("--outputcnv", help="CNV output file name", type=str)
 
 
     args = parser.parse_args()
