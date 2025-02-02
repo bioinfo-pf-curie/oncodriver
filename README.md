@@ -99,7 +99,7 @@ Those rules usually contain the following information:
 - `var_type`: must be `snv` or `cnv`
 - `gene_type`: must be `oncogenes`, `tsg`, `both` or `unknown`. Of note, multiple gene type can be considered, separated by a `|` character.
 - `var_classes`: list here all type of variants to consider as driver
-- `is_hotspot`: define whether the variant must be (or not) annotated at least on of the databases define in `cancer_db`
+- `is_hotspot`: define whether the variant must be (or not) annotated at least in of the databases define in `cancer_db`
 
 
 For instance ; *I would like to consider as driver all misense variants occuring on a oncogene, and known in the cancer databases*
@@ -133,7 +133,7 @@ In `--debug` mode, all variants are outputed with a flag explaining why it has b
 The following flag are available :
 
 - NON_CANONICAL : The variant is not on the canonical transcript (see `--use_canonical` and `--canonical_ids`)
-- NON_CANCER_GENES : The variant is on a genes which is not a driver genes (see `--driver_genes`)
+- NON_CANCER_GENES : The variant is on a gene which is not a driver gene (see `--driver_genes`)
 - NON_DRIVER : The variant is not driver as defined in the configuration file
 - VAF : The variant allele frequency is lower than expected (see `--min_vaf`)
 - DEPTH : The variant depth is not enough covered (see `--min_depth`)
