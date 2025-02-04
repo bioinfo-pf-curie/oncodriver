@@ -23,6 +23,12 @@ vcf:
     gnomAD:
       - AF
 
+cnv:
+  gene_id: 11
+  class: 8
+  start: 2
+  end: 3
+
 
 ## Define the variant selection algorithm
 
@@ -42,7 +48,7 @@ select:
   - var_type: 'cnv'
     gene_type: 'oncogene'
     var_classes:
-      - amplification
+      - AMP
     maxsize: 10000000
     copy: 5
 
@@ -78,7 +84,7 @@ select:
     var_classes:
       - frameshift_variant
       - splice_donor_variant
-      - splice_acceptor_variant
+      - splice_acceptor_variant 
       - stop_gained
     is_hotspot: false
 
@@ -101,6 +107,6 @@ select:
   - var_type: 'cnv'
     gene_type: 'both'
     var_classes:
-      - amplification
+      - AMP
     maxsize: 10000000
     copy: 5
