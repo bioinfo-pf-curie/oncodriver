@@ -1,5 +1,7 @@
 # oncoDriver
 
+Filter and select driver alterations for cancer genes
+
 ```
 python oncoDriver.py \
   --vcf D1326R01_vs_D1326R02_Mutect2_filtered_pass_norm_COSMIC_ICGC_CancerHotspots_GnomAD_dbNSFP.vcf.gz \
