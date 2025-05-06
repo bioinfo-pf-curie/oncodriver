@@ -1,0 +1,24 @@
+***********************************
+version-1.3.0
+
+NEW FEATURES
+  - Fine tune exception with `--strict` mode
+
+***********************************
+version-1.2.0
+
+NEW FEATURES
+  - Support drivers detection for CNVs
+
+SIGNIFICANT USER-VISIBLE CHANGES
+  - Fix parameters
+
+BUG FIXES
+  - Bug in TSG detection
+
+***********************************
+version-1.0.0
+
+NEW FEATURES
+  - First stable version of oncoDriver to select drivers mutations from vcf file
+
