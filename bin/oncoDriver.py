@@ -422,10 +422,7 @@ if __name__ == "__main__":
             # Get annotation INFO as a list of dict
             annot_info = get_INFO(variant.INFO.get(vcf_conf['tag']))
             if annot_info is None:
-                break
-                #raise Exception("Variants not annotated ? Please check your VCF file !\n")
-                #print("Annotations not detected in the VCF file. Please check if the vcf is well annotated !\n")
-                #sys.exit(-1)
+                raise Exception("Variants not annotated ? Please check your VCF file !\n")
             
             ##############################
             # FORMAT - technical filters
@@ -539,9 +536,9 @@ if __name__ == "__main__":
                 wx.write_record(variant)
 
         except:
-            warnflag = str(variant.CHROM) + ":" + str(variant.start) + "-" + str(variant.end)
+            warnflag = str(variant.CHROM) + ":" + str(variant.start+1) + "[" + str(variant.REF) + str(variant.ALT) + "]"
             warnings.warn("Warning : variant {} raises an error. Skipped so far ...".format(warnflag))
-            raise
+            #raise
 
     wx.close()
     vcf.close()
