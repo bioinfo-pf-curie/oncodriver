@@ -422,8 +422,10 @@ if __name__ == "__main__":
             # Get annotation INFO as a list of dict
             annot_info = get_INFO(variant.INFO.get(vcf_conf['tag']))
             if annot_info is None:
-                print("Annotations not detected in the VCF file. Please check if the vcf is well annotated !\n")
-                sys.exit(-1)
+                break
+                #raise Exception("Variants not annotated ? Please check your VCF file !\n")
+                #print("Annotations not detected in the VCF file. Please check if the vcf is well annotated !\n")
+                #sys.exit(-1)
             
             ##############################
             # FORMAT - technical filters
