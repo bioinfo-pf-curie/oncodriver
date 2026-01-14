@@ -2,42 +2,36 @@
 
 [![Install with conda](https://img.shields.io/badge/install%20with-conda-brightgreen.svg)](https://conda.anaconda.org/anaconda)
 
+Filter and select driver alterations for cancer genes
 
-**Filter variants (single nucleotide variants and/or copy number) and select drivers events of clinical interest.**
-
-The main idea is **oncodriver** is to apply a selection algorithm describing which somatic variants should be considered as clinically relevant.
-The selection rules can be different according to the gene types (oncogenes, tumor suppressor, etc.), and whether the variants is known in cancer databases.
-The tool can also focus on variants occuring on canonical transcripts only (as defined by the MANE project for instance)
-The rules are defined in a `yaml` file, and vary according to the variant annotations.
-
-### Quick Help
+### Usage
 
 ```
-usage: oncoDriver.py [-h] -i VCF [--cnv CNV] --config CONFIG [--sample SAMPLE] [--min_vaf MIN_VAF] [--max_maf MAX_MAF] [--min_depth MIN_DEPTH] [--min_alt_depth MIN_ALT_DEPTH] [--use_canonical]
-                     [--canonical_ids CANONICAL_IDS] --driver_genes DRIVER_GENES [--output OUTPUT] [--verbose] [--debug] [--version] [--outputcnv OUTPUTCNV]
+usage: oncoDriver.py [-h] [-i VCF] [--cnv CNV] --config CONFIG [--sample SAMPLE] [--min_vaf MIN_VAF] [--max_maf MAX_MAF] [--min_depth MIN_DEPTH] [--min_alt_depth MIN_ALT_DEPTH] [--use_canonical] [--canonical_ids CANONICAL_IDS] --driver_genes DRIVER_GENES [--output OUTPUT] [--outputcnv OUTPUTCNV] [--verbose] [--debug] [--strict] [--version]
 
 options:
-  -h, --help                     show this help message and exit
-  -i VCF, --vcf VCF              Input file (.vcf, .vcf.gz, .bcf) (default: None)
-  --cnv CNV                      Input file for CNV (segments.transformed_annot_oncokb.txt) (default: None)
-  --config CONFIG                Decision tree config file (default: None)
-  --sample SAMPLE                Specify the sample ID to focus on (default: None)
-  --min_vaf MIN_VAF              Filter variants with Allelic Ratio <= vaf (default: None)
-  --max_maf MAX_MAF              Filter variants with MAF > maf (default: None)
-  --min_depth MIN_DEPTH          Filter variants with depth < min_depth (default: None)
-  --min_alt_depth MIN_ALT_DEPTH  Filter variants with alternative allele depth <= min_alt_depth (default: None)
-  --use_canonical                Use canonical transcript only (default: False)
-  --canonical_ids CANONICAL_IDS  File with canonical IDs information (default: None)
-  --driver_genes DRIVER_GENES    Cancer gene list from oncoKB (default: None)
-  --output OUTPUT                Output file name (default: None)
-  --outputcnv OUTPUTCNV          CNV output file name (default: None)
-  --verbose                      Active verbose mode (default: False)
-  --debug                        Export original VCF with TMB_FILTER tag (default: False)
-  --version                      Version number
+  -h, --help                    show this help message and exit
+  -i VCF, --vcf VCF             Input file (.vcf, .vcf.gz, .bcf) (default: None)
+  --cnv CNV                     Input file for CNV (segments.transformed_annot_oncokb.txt) (default: None)
+  --config CONFIG               Decision tree config file (default: None)
+  --sample SAMPLE               Specify the sample ID to focus on (default: None)
+  --min_vaf MIN_VAF             Filter variants with Allelic Ratio <= vaf (default: None)
+  --max_maf MAX_MAF             Filter variants with MAF > maf (default: None)
+  --min_depth MIN_DEPTH         Filter variants with depth < min_depth (default: None)
+  --min_alt_depth MIN_ALT_DEPTH Filter variants with alternative allele depth <= min_alt_depth (default: None)
+  --use_canonical               Use canonical transcript only (default: False)
+  --canonical_ids CANONICAL_IDS File with canonical IDs information (default: None)
+  --driver_genes DRIVER_GENES   Cancer gene list from oncoKB (default: None)
+  --output OUTPUT               Output file name (default: None)
+  --outputcnv OUTPUTCNV         CNV output file name (default: None)
+  --verbose                     Active verbose mode (default: False)
+  --debug                       Export original VCF with ONCODRIVER tag (default: False)
+  --strict                      Raise an error instead of warnings (default: False)
+  --version                     Version number
+																																							
 ```
 
-
-### Example usage
+### Command line
 
 ```
 python oncoDriver.py \

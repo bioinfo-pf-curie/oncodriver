@@ -3,6 +3,7 @@ version-1.3.0
 
 NEW FEATURES
   - All gene specific rules for CNVs
+  - Fine tune exception with `--strict` mode
 
 ***********************************
 version-1.2.0
