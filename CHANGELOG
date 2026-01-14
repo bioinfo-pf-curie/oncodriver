@@ -5,6 +5,9 @@ NEW FEATURES
   - All gene specific rules for CNVs
   - Fine tune exception with `--strict` mode
 
+SIGNIFICANT USER-VISIBLE CHANGES
+  - code refactoring
+
 ***********************************
 version-1.2.0
 
