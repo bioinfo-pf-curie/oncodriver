@@ -2,7 +2,8 @@
 
 [![Install with conda](https://img.shields.io/badge/install%20with-conda-brightgreen.svg)](https://conda.anaconda.org/anaconda)
 
-Filter and select driver alterations for cancer genes
+This package is designed to filter and select driver alterations for cancer genes from both SNVs (vcf) and CNVs (tsv).
+Variants can be filtered following both technical and biological rules defined in a configuration file.
 
 ## Installation
 
@@ -81,10 +82,10 @@ pytest --cov=oncodriver --cov-report=html
 
 ---
 
-### Usage
+## Usage
 
 ```
-usage: oncoDriver.py [-h] [-i VCF] [--cnv CNV] --config CONFIG [--sample SAMPLE] [--min_vaf MIN_VAF] [--max_maf MAX_MAF] [--min_depth MIN_DEPTH] [--min_alt_depth MIN_ALT_DEPTH] [--use_canonical] [--canonical_ids CANONICAL_IDS] --driver_genes DRIVER_GENES [--output OUTPUT] [--outputcnv OUTPUTCNV] [--verbose] [--debug] [--strict] [--version]
+usage: oncodriver [-h] [-i VCF] [--cnv CNV] --config CONFIG [--sample SAMPLE] [--min_vaf MIN_VAF] [--max_maf MAX_MAF] [--min_depth MIN_DEPTH] [--min_alt_depth MIN_ALT_DEPTH] [--use_canonical] [--canonical_ids CANONICAL_IDS] --driver_genes DRIVER_GENES [--output OUTPUT] [--outputcnv OUTPUTCNV] [--verbose] [--debug] [--strict] [--version]
 
 options:
   -h, --help                    show this help message and exit
@@ -111,7 +112,7 @@ options:
 ### Command line
 
 ```
-python oncoDriver.py \
+oncodriver \
   --vcf D1326R01_vs_D1326R02_Mutect2_filtered_pass_norm_COSMIC_ICGC_CancerHotspots_GnomAD_dbNSFP.vcf.gz \
   --sample D1326R02 \
   --config ./config/pathogenic_variants.yml \
@@ -124,7 +125,10 @@ python oncoDriver.py \
 
 SNVs variants are expected to be in `vcf.gz` format. The variants must be annotated with `snpEff` or `VEP`.
 
-The CNV variants are expected to be in a txt format.
+The CNV variants are expected to be in a tsv format with the following information ;  
+"chrom","loc.start","loc.end","ID","CNt","Geno","logratio","ploidy","call","LOH","gene"
+
+This file can be easily generated from `Facets` outputs.
 
 ### Configuration file
 
