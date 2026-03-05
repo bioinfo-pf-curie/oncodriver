@@ -216,7 +216,7 @@ The following flag are available :
 - POLYM : The variant is a polymorphism
 
 
-## 🤖 AI Disclosure: Augmented
+## AI Disclosure: Augmented
 This project is **AI-augmented**. I utilized AI (e.g., Claude) to:
 * **Generate** boilerplate code and specific utility functions.
 * **Refactor** existing code for better performance and readability.
