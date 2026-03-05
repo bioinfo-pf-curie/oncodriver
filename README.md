@@ -217,7 +217,7 @@ The following flag are available :
 
 
 ## AI Disclosure: Augmented
-This project is **AI-augmented**. I utilized AI (e.g., Claude) to:
+This project is **AI-augmented** and utilized AI (e.g., Claude) to:
 * **Generate** boilerplate code and specific utility functions.
 * **Refactor** existing code for better performance and readability.
 * **Draft** unit tests and technical documentation.
