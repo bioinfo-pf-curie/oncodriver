@@ -12,15 +12,18 @@
 #  The full license is in the LICENSE file, distributed with this software.
 #
 ##############################################################################
-DEFAULT_VCF_SUFFIX = '_oncoDriver.vcf.gz'
-
 import cyvcf2
 import gzip
 import logging
 import re
+import traceback
 import numpy as np
 import os
 import sys
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_VCF_SUFFIX = '_oncoDriver.vcf.gz'
 
 from .annot import clean_version_number, get_gene_type
 
@@ -73,6 +76,7 @@ def is_polym(v, infos, flags:dict, val: float) -> bool:
         if type(sub_INFO[key]) is tuple:
             for i in sub_INFO[key]:
                 if i is not None and i != ".":
+                    # Cast both to float: INFO values may be returned as str by cyvcf2
                     if float(i) >= float(val):
                         return True
         elif sub_INFO[key] is not None and sub_INFO[key] != "." and sub_INFO[key] != "NA":
@@ -127,14 +131,15 @@ def get_INFO(INFO: str) -> list:
     Returns:
         List of dictionaries with annotation info.
     """
-    if INFO is not None:
-        annotTag = INFO.split(',')
-        annotInfo = []
-        for i in range(0, len(annotTag)):
-            annot = annotTag[i].split('|')
-            dictannot = {i: annot[i] for i in range(0, len(annot))}
-            annotInfo.append(dictannot)
-        return(annotInfo)
+    if not INFO:
+        return []
+    annotTag = INFO.split(',')
+    annotInfo = []
+    for i in range(len(annotTag)):
+        annot = annotTag[i].split('|')
+        dictannot = {idx: annot[idx] for idx in range(len(annot))}
+        annotInfo.append(dictannot)
+    return annotInfo
 
 
 def get_tag(v, tag: str) -> np.ndarray:
@@ -188,23 +193,19 @@ def process_vcf(vcf_file: str, sample: str, output: str, debug: bool, min_vaf: f
     driver_counter = 0
     snv_counter = 0
     if vcf_file is not None:
+        vcf = cyvcf2.VCF(vcf_file)
         if sample is not None:
-            vcf = cyvcf2.VCF(vcf_file)
-            count = 0
-            for s in vcf.samples:
-                count = count + 1
-                if str(s) == str(sample):
-                    vcf = cyvcf2.VCF(vcf_file, samples=sample)
-                elif count == len(vcf.samples):
-                    print("Error: Name of the sample incorrect\n")
-                    sys.exit(-1)
-        else:
-            vcf = cyvcf2.VCF(vcf_file)
+            if sample not in vcf.samples:
+                logger.error(f"Sample '{sample}' not found in VCF. Available samples: {list(vcf.samples)}")
+                sys.exit(-1)
+            vcf = cyvcf2.VCF(vcf_file, samples=sample)
 
         # Sample name
         if len(vcf.samples) > 1:
-            sys.stderr.write("Error: " + str(len(vcf.samples)) +
-                             " sample detected. This version is designed for a single sample ! Use --sample argument.\n")
+            logger.error(
+                f"{len(vcf.samples)} samples detected. "
+                "This version is designed for a single sample. Use --sample argument."
+            )
             sys.exit(-1)
         
         # Outputs
@@ -220,18 +221,19 @@ def process_vcf(vcf_file: str, sample: str, output: str, debug: bool, min_vaf: f
             __DEBUGINFO__ = None
             __DRIVERINFO__ = None
             DECISION = None
+            is_driver_variant = False
             snv_counter += 1
 
             if snv_counter % 1000 == 0:
-                logging.info(f"## {snv_counter}")
- 
+                logger.info(f"## Processed {snv_counter} variants ...")
+
             try:
                 db_info = dict(variant.INFO)
 
                 # Get annotation INFO as a list of dict
                 annot_info = get_INFO(variant.INFO.get(vcf_conf['tag']))
-                if annot_info is None:
-                    raise Exception("Annotation tag [" + vcf_conf['tag'] + "] not found !")
+                if not annot_info:
+                    raise ValueError("Annotation tag [" + vcf_conf['tag'] + "] not found or empty !")
                 
                 ##############################
                 # FORMAT - technical filters
@@ -290,11 +292,13 @@ def process_vcf(vcf_file: str, sample: str, output: str, debug: bool, min_vaf: f
                 if not tech_filtered :
                     for annot in annot_info:
                         try:
-                            ## Extract info from variant
+                            ## Extract info from variant.
+                            ## vcf_conf['gene_id'] and vcf_conf['transcript_id'] are integer column
+                            ## indices into the pipe-separated ANN field (e.g. 3=gene, 6=transcript).
                             gene_id = annot[vcf_conf['gene_id']]
-                            transcript_id=clean_version_number(annot[vcf_conf['transcript_id']])
+                            transcript_id = clean_version_number(annot[vcf_conf['transcript_id']])
                         except KeyError as e:
-                            logging.warning(f"Annotation key {e} not found, skipping annotation")
+                            logger.warning(f"Annotation key {e} not found, skipping annotation")
                             continue
                         gene_type = get_gene_type(gene_id, driver_genes)
                         is_driver_variant = False
@@ -302,8 +306,7 @@ def process_vcf(vcf_file: str, sample: str, output: str, debug: bool, min_vaf: f
                         ## Genes specified in the decision algorithm
                         if (gene_id, 'snv') in select_algo:
                             if (use_canonical and (can_ids.get(gene_id) is not None) and transcript_id not in can_ids[gene_id]):
-                                if transcript_id not in can_ids[gene_id]:
-                                    __DEBUGINFO__ = ",".join(x for x in [__DEBUGINFO__, "NON_CANONICAL"] if x is not None)
+                                __DEBUGINFO__ = ",".join(x for x in [__DEBUGINFO__, "NON_CANONICAL"] if x is not None)
                                 continue
                             elif not use_canonical or (use_canonical and (can_ids.get(gene_id) is not None) and transcript_id in can_ids[gene_id]):
                                  is_driver_variant, decision = is_driver(annot, db_info, select_algo[(gene_id, 'snv')], vcf_conf)
@@ -321,8 +324,7 @@ def process_vcf(vcf_file: str, sample: str, output: str, debug: bool, min_vaf: f
                         ## Driver genes from cancer gene list
                         elif gene_type is not None:
                             if (use_canonical and (can_ids.get(gene_id) is not None) and transcript_id not in can_ids[gene_id]):
-                                if transcript_id not in can_ids[gene_id]: 
-                                    __DEBUGINFO__ = ",".join(x for x in [__DEBUGINFO__, "NON_CANONICAL"] if x is not None)
+                                __DEBUGINFO__ = ",".join(x for x in [__DEBUGINFO__, "NON_CANONICAL"] if x is not None)
                                 continue
                             elif not use_canonical or (use_canonical and (can_ids.get(gene_id) is not None) and transcript_id in can_ids[gene_id]):
                                 is_driver_variant, decision = is_driver(annot, db_info, select_algo[(gene_type, 'snv')], vcf_conf)
@@ -348,15 +350,20 @@ def process_vcf(vcf_file: str, sample: str, output: str, debug: bool, min_vaf: f
                     variant.INFO['ONCODRIVER'] = __DRIVERINFO__
                     wx.write_record(variant)
 
+            except (KeyError, ValueError, TypeError) as e:
+                warnflag = str(variant.CHROM) + ":" + str(variant.start+1) + "[" + str(variant.REF) + "/" + str(variant.ALT[0]) + "]"
+                logger.warning(f"Variant {warnflag} raised an expected error: \"{e}\". Skipped ...")
+                if strict:
+                    logger.error("Strict mode activated - exit")
+                    sys.exit(-1)
             except Exception as e:
                 warnflag = str(variant.CHROM) + ":" + str(variant.start+1) + "[" + str(variant.REF) + "/" + str(variant.ALT[0]) + "]"
-                logging.warning(f"Warning : variant {warnflag} raises an error: \"{e}\". Skipped ...")
+                logger.error(
+                    f"Unexpected error on variant {warnflag}: \"{e}\"\n{traceback.format_exc()}"
+                )
                 if strict:
-                    logging.error("Error - strict mode activated - exit")
                     sys.exit(-1)
 
         wx.close()
         vcf.close()
     return driver_counter, snv_counter
-
-

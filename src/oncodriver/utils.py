@@ -14,34 +14,41 @@
 ##############################################################################
 
 import logging
-import re
 import yaml
-import csv
+
+logger = logging.getLogger(__name__)
+
 
 def load_configuration(config_file: str) -> dict:
     """
     Loads the decision rules from a YAML configuration file.
     Args:
-        infile: Path to the YAML configuration file.
+        config_file: Path to the YAML configuration file.
     Returns:
         Configuration dictionary with 'vcf', 'cnv', and 'select' keys.
     Raises:
         ValueError: If the YAML file cannot be read or parsed.
     """
-    cfg={}
+    cfg = {}
     with open(config_file, 'r') as stream:
         try:
-            data=yaml.safe_load(stream)
+            data = yaml.safe_load(stream)
+            for key in ('vcf', 'cnv', 'select'):
+                if key not in data:
+                    raise ValueError(f"Missing required section '{key}' in config file: {config_file}")
             cfg['vcf'] = data['vcf']
             cfg['cnv'] = data['cnv']
             d={}
             for info in data['select']:
                 if 'gene_id' in info:
-                    k=(info['gene_id'], info['var_type'])
-                    if (k in d):
-                        d[k].append(info)
-                    else:
-                        d[k]=[info]
+                    for gid in info['gene_id'].split("|"):
+                        k=(gid.strip(), info['var_type'])
+                        gid_info = info.copy()
+                        gid_info['gene_id'] = gid.strip()
+                        if (k in d):
+                            d[k].append(gid_info)
+                        else:
+                            d[k]=[gid_info]
                 elif 'gene_type' in info:
                     for gt in info['gene_type'].split("|"):
                         k=(gt,info['var_type'])
@@ -54,7 +61,7 @@ def load_configuration(config_file: str) -> dict:
             cfg['select'] = d
             return cfg
         except yaml.YAMLError as e:
-            raise ValueError(f"Error - unable to read {infile}: {e}")
+            raise ValueError(f"Error - unable to read {config_file}: {e}")
 
 
 def print_config(cfg: dict) -> None:
@@ -63,16 +70,14 @@ def print_config(cfg: dict) -> None:
     Args:
         cfg: Configuration dictionary to print.
     """
-    for k, val in cfg.items():
+    for section, val in cfg.items():
         if isinstance(val, dict):
-            logging.info(f"## {k}->")
+            logger.info(f"## {section}->")
             for j, val2 in val.items():
                 if isinstance(val2, list):
-                    for k in val2:
-                        logging.info(f"## - {j} = {k}")
+                    for item in val2:
+                        logger.info(f"## - {j} = {item}")
                 else:
-                    logging.info(f"## - {j} = {val2}")
-                        
+                    logger.info(f"## - {j} = {val2}")
         else:
-            logging.info(f"## {k} = {val}")
-
+            logger.info(f"## {section} = {val}")

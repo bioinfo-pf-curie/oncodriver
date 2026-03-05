@@ -4,6 +4,83 @@
 
 Filter and select driver alterations for cancer genes
 
+## Installation
+
+### From source (pip)
+
+Python ≥ 3.10 is required.
+
+```bash
+git clone https://gitlab.com/nservant/oncodriver.git
+cd oncodriver
+pip install .
+```
+
+To also install the optional testing and linting dependencies:
+
+```bash
+pip install ".[test,lint]"
+```
+
+### With conda
+
+A ready-to-use conda environment is provided via [`environment.yml`](environment.yml):
+
+```bash
+conda env create -f environment.yml
+conda activate oncodriver
+pip install .
+```
+
+The conda environment pins the key bioinformatics dependencies (`cyvcf2`, `pyyaml`, `mosdepth`, `pybedtools`) to tested versions.
+
+---
+
+## Testing
+
+The test suite uses [pytest](https://docs.pytest.org/) with [pytest-cov](https://pytest-cov.readthedocs.io/) for coverage reporting.
+
+### Install test dependencies
+
+```bash
+pip install ".[test]"
+```
+
+### Run all tests
+
+```bash
+pytest
+```
+
+By default (see [`pyproject.toml`](pyproject.toml)), pytest:
+
+- discovers tests in the `tests/` directory
+- measures coverage of the `oncodriver` package (`--cov=oncodriver`)
+- prints a term-missing coverage report (`--cov-report=term-missing`)
+
+### Run a specific test module
+
+```bash
+pytest tests/test_snv_process.py
+pytest tests/test_cnv_process.py
+pytest tests/test_cli.py
+```
+
+### Run with verbose output
+
+```bash
+pytest -v
+```
+
+### Generate an HTML coverage report
+
+```bash
+pytest --cov=oncodriver --cov-report=html
+# then open htmlcov/index.html
+```
+
+---
+
 ### Usage
 
 ```
@@ -133,4 +210,12 @@ The following flag are available :
 - DEPTH : The variant depth is not enough covered (see `--min_depth`)
 - ALTDEPTH : The alternative allele is not enough covered (see `--min_alt_depth`)
 - POLYM : The variant is a polymorphism
+
+
+## 🤖 AI Disclosure: Augmented
+This project is **AI-augmented**. I utilized AI (e.g., Claude) to:
+* **Generate** boilerplate code and specific utility functions.
+* **Refactor** existing code for better performance and readability.
+* **Draft** unit tests and technical documentation.
+**Verification:** Every AI-generated contribution was manually reviewed, debugged, and integrated into the final codebase.
 

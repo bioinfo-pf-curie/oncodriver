@@ -5,19 +5,12 @@
 #
 #  Copyright (c) 2026 - Institut Curie
 #
-#  File author(s):
-#      Nicolas Servant <nicolas.servant@curie.fr>
-#
 #  Distributed under the terms of the CeCILL-B license.
 #  The full license is in the LICENSE file, distributed with this software.
 #
 ##############################################################################
-"""
-Backwards-compatible entry point.
-Prefer using the installed `oncodriver` command or `python -m oncodriver`.
-"""
 
-from oncodriver.cli import main
+from .cli import main
 
 if __name__ == "__main__":
     main()
