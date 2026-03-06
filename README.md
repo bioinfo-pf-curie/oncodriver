@@ -1,8 +1,9 @@
 # oncoDriver
 
+[![Install with pip](https://img.shields.io/badge/install%20with-pip-brightblue.svg)](https://packaging.python.org/en/latest/tutorials/installing-packages/)
 [![Install with conda](https://img.shields.io/badge/install%20with-conda-brightgreen.svg)](https://conda.anaconda.org/anaconda)
 
-This package is designed to filter and select driver alterations for cancer genes from both SNVs (vcf) and CNVs (tsv).
+This package is designed to filter and select driver alterations for cancer genes from both SNVs (vcf) and CNVs (tsv).  
 Variants can be filtered following both technical and biological rules defined in a configuration file.
 
 ## Installation
@@ -32,8 +33,6 @@ conda env create -f environment.yml
 conda activate oncodriver
 pip install .
 ```
-
-The conda environment pins the key bioinformatics dependencies (`cyvcf2`, `pyyaml`, `mosdepth`, `pybedtools`) to tested versions.
 
 ---
 
@@ -106,7 +105,6 @@ options:
   --debug                       Export original VCF with ONCODRIVER tag (default: False)
   --strict                      Raise an error instead of warnings (default: False)
   --version                     Version number
-																																							
 ```
 
 ### Command line
@@ -125,7 +123,7 @@ oncodriver \
 
 SNVs variants are expected to be in `vcf.gz` format. The variants must be annotated with `snpEff` or `VEP`.
 
-The CNV variants are expected to be in a tsv format with the following information ;  
+The CNV variants are expected to be in a `tsv` format with the following information ;  
 "chrom","loc.start","loc.end","ID","CNt","Geno","logratio","ploidy","call","LOH","gene"
 
 This file can be easily generated from `Facets` outputs.
