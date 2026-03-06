@@ -1,6 +1,6 @@
 # oncoDriver
 
-[![Install with pip](https://img.shields.io/badge/install%20with-pip-brightblue.svg)](https://packaging.python.org/en/latest/tutorials/installing-packages/)
+[![Install with pip](https://img.shields.io/badge/install%20with-pip-blue.svg)](https://packaging.python.org/en/latest/tutorials/installing-packages/)
 [![Install with conda](https://img.shields.io/badge/install%20with-conda-brightgreen.svg)](https://conda.anaconda.org/anaconda)
 
 This package is designed to filter and select driver alterations for cancer genes from both SNVs (vcf) and CNVs (tsv).  
