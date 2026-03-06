@@ -366,4 +366,5 @@ def process_vcf(vcf_file: str, sample: str, output: str, debug: bool, min_vaf: f
 
         wx.close()
         vcf.close()
+    logger.info(f"SNV processing complete: {snv_counter} variants processed, {driver_counter} SNV drivers identified")
     return driver_counter, snv_counter

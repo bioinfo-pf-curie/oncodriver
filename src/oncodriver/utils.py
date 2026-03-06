@@ -64,20 +64,64 @@ def load_configuration(config_file: str) -> dict:
             raise ValueError(f"Error - unable to read {config_file}: {e}")
 
 
-def print_config(cfg: dict) -> None:
+def print_config(cfg: dict, log_file: str = None, file_handle=None) -> None:
     """
     Prints the decision algorithm configuration in a human-readable manner.
     Args:
         cfg: Configuration dictionary to print.
+        log_file: Optional file path to write the config output to. If not specified, uses logger.
+        file_handle: Optional file handle to write to. If provided, writes directly to this handle.
     """
+    def format_dict(d: dict, indent: int = 0) -> list:
+        """Recursively format a dictionary with proper indentation."""
+        lines = []
+        prefix = " " * indent
+        for key, val in d.items():
+            # Keep key as-is (handle tuple keys from select section)
+            if isinstance(val, dict):
+                lines.append(f"{prefix}{key}:")
+                lines.extend(format_dict(val, indent + 2))
+            elif isinstance(val, list):
+                lines.append(f"{prefix}{key}:")
+                for item in val:
+                    if isinstance(item, dict):
+                        lines.extend(format_dict(item, indent + 2))
+                    else:
+                        lines.append(f"{prefix}  - {item}")
+            else:
+                lines.append(f"{prefix}{key}: {val}")
+        return lines
+
+    lines = []
+    lines.append("=" * 60)
+    lines.append("CONFIGURATION")
+    lines.append("=" * 60)
+    
     for section, val in cfg.items():
+        lines.append("")
+        lines.append(f"--- {section} ---")
+        
         if isinstance(val, dict):
-            logger.info(f"## {section}->")
-            for j, val2 in val.items():
-                if isinstance(val2, list):
-                    for item in val2:
-                        logger.info(f"## - {j} = {item}")
+            lines.extend(format_dict(val))
+        elif isinstance(val, list):
+            for item in val:
+                if isinstance(item, dict):
+                    lines.extend(format_dict(item))
                 else:
-                    logger.info(f"## - {j} = {val2}")
+                    lines.append(f"  - {item}")
         else:
-            logger.info(f"## {section} = {val}")
+            lines.append(f"  {val}")
+    
+    lines.append("")
+    lines.append("=" * 60)
+    
+    output = "\n".join(lines)
+    
+    # Write to file handle if specified, otherwise use log_file or logger
+    if file_handle:
+        file_handle.write(output + '\n')
+    elif log_file:
+        with open(log_file, 'a') as f:
+            f.write(output + '\n')
+    else:
+        logger.info(output)

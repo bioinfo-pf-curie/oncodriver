@@ -16,15 +16,13 @@
 import logging
 import re
 import csv
-import gzip
 import os
-import sys
 
 from .annot import get_gene_type
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_CNV_SUFFIX = '_oncoDriver.tsv'
+DEFAULT_CNV_SUFFIX = '_oncodriver.tsv'
 
 
 def is_driver_cnv(var_class: str, length: int, conf_select: dict) -> bool:
@@ -45,7 +43,7 @@ def is_driver_cnv(var_class: str, length: int, conf_select: dict) -> bool:
     return False
     
 def process_cnv(cnv_file: str, outputcnv: str, debug: bool, cnv_conf: dict, select_algo: dict, driver_genes: dict,
-                can_ids: dict, initial_driver_counter: int) -> tuple[int, int]:
+                can_ids: dict) -> tuple[int, int]:
     """
     Process CNV file and return updated driver and CNV counters.
     Args:
@@ -60,7 +58,7 @@ def process_cnv(cnv_file: str, outputcnv: str, debug: bool, cnv_conf: dict, sele
     Returns:
         Tuple of updated driver counter and CNV counter.
     """
-    driver_counter = initial_driver_counter
+    driver_counter = 0
     cnv_counter = 0
     if cnv_file is not None:
         out_path = outputcnv if outputcnv else re.sub(r'\.txt$|\.tsv', DEFAULT_CNV_SUFFIX, os.path.basename(cnv_file))
@@ -109,5 +107,5 @@ def process_cnv(cnv_file: str, outputcnv: str, debug: bool, cnv_conf: dict, sele
                     row.append(driver_status)
                     row.append(gene_type)
                     tsv_writer.writerow(row)
-        logger.info(f"CNV processing complete: {cnv_counter} variants processed, {driver_counter - initial_driver_counter} CNV drivers identified")
+        logger.info(f"CNV processing complete: {cnv_counter} variants processed, {driver_counter} CNV drivers identified")
     return driver_counter, cnv_counter

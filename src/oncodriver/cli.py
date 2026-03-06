@@ -27,6 +27,7 @@ from datetime import date
 import argparse
 import sys
 import os
+import os
 import logging
 
 from .utils import load_configuration, print_config
@@ -64,11 +65,13 @@ def args_parse() -> argparse.Namespace:
     parser.add_argument("--canonical_ids", help="File with canonical IDs information", type=str, default=None)
     
     # Driver genes
-    parser.add_argument("--driver_genes", help="Cancer gene list from oncoKB", type=str, required=True)
+    parser.add_argument("--driver_genes", help="Cancer gene list from oncoKB", type=str, 
+                        default=os.path.join(os.path.dirname(__file__), 'assets', 'cancerGeneList.tsv'))
     
     # Others
     parser.add_argument("--output", help="Output file name", type=str)
     parser.add_argument("--outputcnv", help="CNV output file name", type=str)
+    parser.add_argument("--log", help="Log file", type=str, default=None)
     parser.add_argument("--verbose", help="Active verbose mode", action="store_true")
     parser.add_argument("--debug", help="Export original VCF with ONCODRIVER tag", action="store_true")
     parser.add_argument("--strict", help="Raise an error instead of warnings", action="store_true")
@@ -92,27 +95,17 @@ def parse_and_validate_args() -> argparse.Namespace:
     return args
 
 
-def output_summary(vcf_file: str, sample: str, cnv_file: str, config_file: str, driver_genes_file: str, use_canonical: bool, canonical_ids_file: str, conf: dict, snv_counter: int, cnv_counter: int, driver_counter: int) -> None:
+def output_summary(summary_lines: list, config: dict, log_file: str) -> None:
     """
     Output the summary of the analysis.
     """
-    summary_lines = [
-        f"## oncoDriver version={__version__}",
-        f"## When={date.today()}",
-        f"## SNVs={vcf_file}",
-        f"## Sample={sample}",
-        f"## CNVs={cnv_file}",
-        f"## Config={config_file}",
-        f"## Driver genes={driver_genes_file}",
-        f"## Use canonical={use_canonical}",
-        f"## Canonical genes={canonical_ids_file}",
-    ]
-    for line in summary_lines:
-        logger.info(line)
-    print_config(conf)
-    logger.info(f"## Total SNVs variants={snv_counter}")
-    logger.info(f"## Total CNVs variants={cnv_counter}")
-    logger.info(f"## Driver variants={driver_counter}")
+    
+    # Write to log file if specified
+    with open(log_file, 'w') as f:
+        for line in summary_lines:
+            f.write(line + '\n')
+        
+        print_config(config, file_handle=f)
 
 
 def main() -> None:
@@ -122,7 +115,7 @@ def main() -> None:
     # Configure logging before argument validation so that error messages during
     # validation are properly formatted and visible.
     _level = logging.DEBUG if '--debug' in sys.argv else logging.INFO
-    logging.basicConfig(level=_level, format='%(message)s')
+    logging.basicConfig(level=_level, format='[%(levelname)s] %(message)s')
 
     args = parse_and_validate_args()
 
@@ -136,23 +129,35 @@ def main() -> None:
     if args.use_canonical:
         can_ids = load_canonicals(args.canonical_ids, clean_ids=True)
     
-    driver_counter, snv_counter = process_vcf(args.vcf, args.sample, 
+    snv_driver_counter, snv_counter = process_vcf(args.vcf, args.sample, 
                                               args.output, args.debug, 
                                               args.min_vaf, args.min_depth, 
                                               args.min_alt_depth, args.max_maf, 
                                               args.use_canonical, args.strict, 
                                               vcf_conf, select_algo, driver_genes, can_ids)
     
-    driver_counter, cnv_counter = process_cnv(args.cnv, args.outputcnv, 
+    cnv_driver_counter, cnv_counter = process_cnv(args.cnv, args.outputcnv, 
                                               args.debug, cnv_conf, 
                                               select_algo, driver_genes, 
-                                              can_ids, driver_counter)
+                                              can_ids)
 
-    output_summary(args.vcf, args.sample, 
-                   args.cnv, args.config, 
-                   args.driver_genes, args.use_canonical, 
-                   args.canonical_ids, conf, 
-                   snv_counter, cnv_counter, driver_counter)
+    if args.log is not None:
+        summary_lines = [
+            f"## oncoDriver version={__version__}",
+            f"## When={date.today()}",
+            f"## SNVs={args.vcf}",
+            f"## Sample={args.sample}",
+            f"## CNVs={args.cnv}",
+            f"## Config={args.config}",
+            f"## Driver genes={args.driver_genes}",
+            f"## Use canonical={args.use_canonical}",
+            f"## Canonical genes={args.canonical_ids}",
+            f"## Total SNVs variants={snv_counter}",
+            f"## Total CNVs variants={cnv_counter}",
+            f"## Driver SNVs variants={snv_driver_counter}",
+            f"## Driver CNVs variants={cnv_driver_counter}"
+        ]
+        output_summary(summary_lines, conf, args.log)
 
 
 if __name__ == "__main__":

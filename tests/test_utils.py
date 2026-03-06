@@ -111,12 +111,12 @@ class TestPrintConfig:
         import logging
         with caplog.at_level(logging.INFO):
             print_config({"version": "1.0", "mode": "strict"})
-        assert "version" in caplog.text
+        assert "VERSION" in caplog.text
 
     def test_runs_without_error_nested_dict(self, caplog):
         import logging
         cfg = {"vcf": {"tag": "ANN", "vaf": "AF"}}
         with caplog.at_level(logging.INFO):
             print_config(cfg)
-        assert "vcf" in caplog.text
+        assert "VCF" in caplog.text
         assert "tag" in caplog.text
