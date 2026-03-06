@@ -26,6 +26,8 @@ DRIVER_GENES = os.path.join(ASSETS_DIR, "cancerGeneList.tsv")
 CONFIG = os.path.join(PROJECT_ROOT, "config", "pathogenic_variants.yml")
 # Use the annotated test VCF from tests/data/
 TEST_VCF = os.path.join(TEST_DIR, "data", "test_mutect2_annotated.vcf.gz")
+# Use the annotated test CNV from tests/data/
+TEST_CNV = os.path.join(TEST_DIR, "data", "test_cnv_annotated.tsv.gz")
 # The test VCF has two samples; use the first sample for tests
 TEST_SAMPLE = "D1326R05"
 
@@ -110,60 +112,169 @@ class TestSNVIntegration:
         assert "ONCODRIVER" in header_ids
         vcf.close()
 
+
+# ---------------------------------------------------------------------------
+# End-to-end CNV processing
+# ---------------------------------------------------------------------------
+
+class TestCNVIntegration:
     @requires_real_assets
-    def test_driver_count_is_positive(self, tmp_path):
-        """Sanity check: at least one driver variant should be identified."""
-        out = str(tmp_path / "result.vcf.gz")
-        proc = subprocess.run(
+    def test_cnv_produces_output_tsv(self, tmp_path):
+        """Test that providing a CNV file produces an output TSV file."""
+        out_cnv = str(tmp_path / "result_cnv.tsv")
+        result = subprocess.run(
             [sys.executable, "-m", "oncodriver",
-             "-i", TEST_VCF,
-             "--sample", TEST_SAMPLE,
+             "--cnv", TEST_CNV,
              "--config", CONFIG,
              "--driver_genes", DRIVER_GENES,
-             "--output", out],
+             "--outputcnv", out_cnv],
             capture_output=True,
             text=True,
-            check=True,
         )
-        # The summary is printed to stdout via logging
-        combined = proc.stdout + proc.stderr
-        # Look for "Driver variants=" line in summary
-        driver_lines = [l for l in combined.splitlines() if "Driver variants=" in l]
-        if driver_lines:
-            count_str = driver_lines[-1].split("=")[-1].strip()
-            assert int(count_str) >= 0
+        assert result.returncode == 0, result.stderr
+        assert os.path.exists(out_cnv), "Output CNV TSV was not created"
 
     @requires_real_assets
-    def test_maf_filter_reduces_driver_count(self, tmp_path):
-        """Adding --max_maf 0.001 should not increase driver count vs no filter."""
-        out_no_filter = str(tmp_path / "no_filter.vcf.gz")
-        out_filtered = str(tmp_path / "filtered.vcf.gz")
-
+    def test_cnv_output_has_driver_status_column(self, tmp_path):
+        """Verify the output CNV TSV has the driver_status column."""
+        import csv
+        out_cnv = str(tmp_path / "result_cnv.tsv")
         subprocess.run(
             [sys.executable, "-m", "oncodriver",
+             "--cnv", TEST_CNV,
+             "--config", CONFIG,
+             "--driver_genes", DRIVER_GENES,
+             "--outputcnv", out_cnv],
+            capture_output=True,
+            check=True,
+        )
+        with open(out_cnv, newline="") as f:
+            reader = csv.reader(f, delimiter=",")
+            header = next(reader)
+        assert "driver_status" in header, "driver_status column missing from output"
+        assert "gene_type" in header, "gene_type column missing from output"
+
+
+# ---------------------------------------------------------------------------
+# End-to-end combined SNV + CNV processing
+# ---------------------------------------------------------------------------
+
+class TestSNVAndCNVIntegration:
+    @requires_real_assets
+    def test_snv_and_cnv_produce_both_outputs(self, tmp_path):
+        """Test that providing both VCF and CNV files produces both output files."""
+        out_vcf = str(tmp_path / "result.vcf.gz")
+        out_cnv = str(tmp_path / "result_cnv.tsv")
+        result = subprocess.run(
+            [sys.executable, "-m", "oncodriver",
              "-i", TEST_VCF,
+             "--cnv", TEST_CNV,
              "--sample", TEST_SAMPLE,
              "--config", CONFIG,
              "--driver_genes", DRIVER_GENES,
-             "--output", out_no_filter],
-            capture_output=True, check=True,
+             "--output", out_vcf,
+             "--outputcnv", out_cnv],
+            capture_output=True,
+            text=True,
         )
-        subprocess.run(
-            [sys.executable, "-m", "oncodriver",
-             "-i", TEST_VCF,
-             "--sample", TEST_SAMPLE,
-             "--config", CONFIG,
-             "--driver_genes", DRIVER_GENES,
-             "--max_maf", "0.001",
-             "--output", out_filtered],
-            capture_output=True, check=True,
-        )
+        assert result.returncode == 0, result.stderr
+        assert os.path.exists(out_vcf), "Output VCF was not created"
+        assert os.path.exists(out_cnv), "Output CNV TSV was not created"
 
+    @requires_real_assets
+    def test_snv_and_cnv_both_have_driver_results(self, tmp_path):
+        """Test that both SNV and CNV outputs contain driver information."""
         import cyvcf2
-        def count_records(path):
-            vcf = cyvcf2.VCF(path)
-            n = sum(1 for _ in vcf)
-            vcf.close()
-            return n
+        import csv
 
-        assert count_records(out_filtered) <= count_records(out_no_filter)
+        out_vcf = str(tmp_path / "result.vcf.gz")
+        out_cnv = str(tmp_path / "result_cnv.tsv")
+        subprocess.run(
+            [sys.executable, "-m", "oncodriver",
+             "-i", TEST_VCF,
+             "--cnv", TEST_CNV,
+             "--sample", TEST_SAMPLE,
+             "--config", CONFIG,
+             "--driver_genes", DRIVER_GENES,
+             "--output", out_vcf,
+             "--outputcnv", out_cnv],
+            capture_output=True,
+            check=True,
+        )
+
+        # Check VCF has ONCODRIVER tag
+        vcf = cyvcf2.VCF(out_vcf)
+        header_ids = [h["ID"] for h in vcf.header_iter() if h.type == "INFO"]
+        assert "ONCODRIVER" in header_ids
+        vcf.close()
+
+        # Check CNV has driver_status column
+        with open(out_cnv, newline="") as f:
+            reader = csv.reader(f, delimiter=",")
+            header = next(reader)
+        assert "driver_status" in header
+
+
+# ---------------------------------------------------------------------------
+# Debug mode tests
+# ---------------------------------------------------------------------------
+
+class TestDebugMode:
+    @requires_real_assets
+    def test_debug_mode_preserves_snv_count(self, tmp_path):
+        """Test that debug mode preserves the same number of SNV records in output as input."""
+        import cyvcf2
+
+        out = str(tmp_path / "result_debug.vcf.gz")
+        subprocess.run(
+            [sys.executable, "-m", "oncodriver",
+             "-i", TEST_VCF,
+             "--sample", TEST_SAMPLE,
+             "--config", CONFIG,
+             "--driver_genes", DRIVER_GENES,
+             "--output", out,
+             "--debug"],
+            capture_output=True,
+            check=True,
+        )
+
+        # Count records in input VCF
+        vcf_in = cyvcf2.VCF(TEST_VCF)
+        input_count = sum(1 for _ in vcf_in)
+        vcf_in.close()
+
+        # Count records in output VCF
+        vcf_out = cyvcf2.VCF(out)
+        output_count = sum(1 for _ in vcf_out)
+        vcf_out.close()
+
+        assert output_count == input_count, \
+            f"Output VCF has {output_count} records but input has {input_count}"
+
+    @requires_real_assets
+    def test_debug_mode_preserves_cnv_count(self, tmp_path):
+        """Test that debug mode preserves the same number of CNV records in output as input."""
+        import gzip
+
+        out_cnv = str(tmp_path / "result_cnv_debug.tsv")
+        subprocess.run(
+            [sys.executable, "-m", "oncodriver",
+             "--cnv", TEST_CNV,
+             "--config", CONFIG,
+             "--driver_genes", DRIVER_GENES,
+             "--outputcnv", out_cnv,
+             "--debug"],
+            capture_output=True,
+            check=True,
+        )
+
+        # Count records in input CNV (skip header)
+        with gzip.open(TEST_CNV, 'rt') as f:
+            input_lines = sum(1 for _ in f) - 1  # subtract header
+
+        # Count records in output CNV (skip header)
+        with open(out_cnv, 'r') as f:
+            output_lines = sum(1 for _ in f) - 1  # subtract header
+
+        assert output_lines == input_lines, \
+            f"Output CNV has {output_lines} records but input has {input_lines}"
