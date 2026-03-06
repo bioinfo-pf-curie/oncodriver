@@ -15,8 +15,10 @@ import pytest
 # ---------------------------------------------------------------------------
 
 TEST_DIR = os.path.dirname(__file__)
-ASSETS_DIR = os.path.join(os.path.dirname(TEST_DIR), "assets")
-TEST_VCF = os.path.join(TEST_DIR, "02-104_T_vs_02-104_C_Mutect2_calls_norm_GnomAD_filtered_ICGC_CancerHotspots_COSMIC_dbNSFP.vcf.gz")
+SRC_DIR = os.path.join(os.path.dirname(TEST_DIR), "src", "oncodriver")
+ASSETS_DIR = os.path.join(SRC_DIR, "assets")
+TEST_VCF = os.path.join(TEST_DIR, "data", "test_mutect2_annotated.vcf.gz")
+TEST_CNV = os.path.join(TEST_DIR, "data", "test_cnv_annotated.tsv.gz")
 DRIVER_GENES_FILE = os.path.join(ASSETS_DIR, "cancerGeneList.tsv")
 CONFIG_FILE = os.path.join(os.path.dirname(TEST_DIR), "config", "pathogenic_variants.yml")
 
@@ -120,3 +122,9 @@ def minimal_cnv_file(tmp_path):
         writer.writerow(header)
         writer.writerows(rows)
     return str(cnv_path)
+
+
+@pytest.fixture
+def annotated_cnv_file():
+    """Path to the annotated CNV test file."""
+    return TEST_CNV

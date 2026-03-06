@@ -11,6 +11,14 @@ from oncodriver.cnv_process import is_driver_cnv, process_cnv
 
 
 # ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+
+TEST_DIR = os.path.dirname(__file__)
+TEST_CNV = os.path.join(TEST_DIR, "data", "test_cnv_annotated.tsv.gz")
+
+
+# ---------------------------------------------------------------------------
 # is_driver_cnv
 # ---------------------------------------------------------------------------
 
@@ -96,7 +104,6 @@ class TestProcessCnv:
             minimal_cnv_file, out, debug=False,
             cnv_conf=cnv_conf, select_algo=select_algo,
             driver_genes=driver_genes, can_ids=None,
-            initial_driver_counter=0,
         )
         assert cnv_count == 4  # 4 rows in fixture
         # KRAS (oncogene) AMP → driver
@@ -107,16 +114,14 @@ class TestProcessCnv:
         out = str(tmp_path / "out.tsv")
         process_cnv(minimal_cnv_file, out, debug=False,
                     cnv_conf=cnv_conf, select_algo=select_algo,
-                    driver_genes=driver_genes, can_ids=None,
-                    initial_driver_counter=0)
+                    driver_genes=driver_genes, can_ids=None)
         assert os.path.exists(out)
 
     def test_output_has_correct_header(self, tmp_path, minimal_cnv_file, cnv_conf, select_algo, driver_genes):
         out = str(tmp_path / "out.tsv")
         process_cnv(minimal_cnv_file, out, debug=False,
                     cnv_conf=cnv_conf, select_algo=select_algo,
-                    driver_genes=driver_genes, can_ids=None,
-                    initial_driver_counter=0)
+                    driver_genes=driver_genes, can_ids=None)
         with open(out, newline="") as f:
             # csv.writer uses comma by default; read with matching delimiter
             reader = csv.reader(f)
@@ -133,7 +138,6 @@ class TestProcessCnv:
             minimal_cnv_file, out, debug=True,
             cnv_conf=cnv_conf, select_algo=select_algo,
             driver_genes=driver_genes, can_ids=None,
-            initial_driver_counter=0,
         )
         # Even in debug mode, driver_count should only reflect true drivers
         assert driver_count == 2
@@ -143,9 +147,8 @@ class TestProcessCnv:
             None, None, debug=False,
             cnv_conf=cnv_conf, select_algo=select_algo,
             driver_genes=driver_genes, can_ids=None,
-            initial_driver_counter=5,  # should be preserved unchanged
         )
-        assert driver_count == 5
+        assert driver_count == 0
         assert cnv_count == 0
 
     def test_gene_id_rule_overrides_gene_type(self, tmp_path, cnv_conf, driver_genes):
@@ -167,6 +170,50 @@ class TestProcessCnv:
             str(cnv_path), out, debug=False,
             cnv_conf=cnv_conf, select_algo=select_with_gene_id,
             driver_genes=driver_genes, can_ids=None,
-            initial_driver_counter=0,
         )
         assert driver_count == 1
+
+
+# ---------------------------------------------------------------------------
+# Integration tests with annotated CNV file
+# ---------------------------------------------------------------------------
+
+class TestProcessCnvAnnotated:
+    """Integration tests using the annotated CNV test file."""
+
+    @pytest.fixture
+    def cnv_conf(self):
+        return {"gene_id": 10, "class": 8, "start": 1, "end": 2}
+
+    @pytest.fixture
+    def select_algo(self):
+        return {
+            ("oncogene", "cnv"): [{"var_classes": ["AMP"], "maxsize": 10_000_000}],
+            ("tsg", "cnv"): [{"var_classes": ["DEL"]}],
+        }
+
+    @pytest.fixture
+    def driver_genes(self):
+        return {
+            "oncogene": {"KRAS", "EGFR"},
+            "tsg": {"TP53"},
+            "both": set(),
+            "unknown": set(),
+        }
+
+    def test_annotated_cnv_file_exists(self):
+        """Verify the annotated CNV test file exists."""
+        assert os.path.exists(TEST_CNV)
+
+    def test_process_annotated_cnv(self, tmp_path, cnv_conf, select_algo, driver_genes):
+        """Test processing the annotated CNV file."""
+        out = str(tmp_path / "annotated_out.tsv")
+        driver_count, cnv_count = process_cnv(
+            TEST_CNV, out, debug=False,
+            cnv_conf=cnv_conf, select_algo=select_algo,
+            driver_genes=driver_genes, can_ids=None,
+        )
+        # Should process all rows from the annotated file
+        assert cnv_count > 0
+        # Check output file was created
+        assert os.path.exists(out)

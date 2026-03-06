@@ -23,7 +23,7 @@ import sys
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_VCF_SUFFIX = '_oncoDriver.vcf.gz'
+DEFAULT_VCF_SUFFIX = '_oncodriver.vcf.gz'
 
 from .annot import clean_version_number, get_gene_type
 

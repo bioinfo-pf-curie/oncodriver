@@ -17,6 +17,7 @@ import logging
 import re
 import csv
 import os
+import gzip
 
 from .annot import get_gene_type
 
@@ -64,7 +65,8 @@ def process_cnv(cnv_file: str, outputcnv: str, debug: bool, cnv_conf: dict, sele
         out_path = outputcnv if outputcnv else re.sub(r'\.txt$|\.tsv', DEFAULT_CNV_SUFFIX, os.path.basename(cnv_file))
         logger.info(f"Processing CNV file '{cnv_file}' ...")
 
-        with open(cnv_file, "r", encoding="utf8") as tsvfile, open(out_path, mode='w', newline='') as outtsv:
+        opener = gzip.open if cnv_file.endswith('.gz') else open
+        with opener(cnv_file, "rt", encoding="utf8") as tsvfile, open(out_path, mode='w', newline='') as outtsv:
             tsv_reader = csv.reader(tsvfile, delimiter="\t")
             tsv_writer = csv.writer(outtsv)
             header = ["chrom","loc.start","loc.end","ID","CNt","Geno","logratio","ploidy","call","LOH","gene","driver_status","gene_type"]

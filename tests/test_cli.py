@@ -16,20 +16,18 @@ import pytest
 
 # ---------------------------------------------------------------------------
 # Path helpers (only skip when real input files are missing)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 TEST_DIR = os.path.dirname(__file__)
 PROJECT_ROOT = os.path.dirname(TEST_DIR)
-ASSETS_DIR = os.path.join(PROJECT_ROOT, "assets")
+SRC_DIR = os.path.join(PROJECT_ROOT, "src", "oncodriver")
+ASSETS_DIR = os.path.join(SRC_DIR, "assets")
 DRIVER_GENES = os.path.join(ASSETS_DIR, "cancerGeneList.tsv")
 CONFIG = os.path.join(PROJECT_ROOT, "config", "pathogenic_variants.yml")
-# The VCF fixture lives in test/ (singular), not tests/ (plural)
-TEST_VCF = os.path.join(
-    PROJECT_ROOT, "test",
-    "02-104_T_vs_02-104_C_Mutect2_calls_norm_GnomAD_filtered_ICGC_CancerHotspots_COSMIC_dbNSFP.vcf.gz",
-)
-# The test VCF has two samples; use the tumour sample for tests
-TEST_SAMPLE = "02-104_T"
+# Use the annotated test VCF from tests/data/
+TEST_VCF = os.path.join(TEST_DIR, "data", "test_mutect2_annotated.vcf.gz")
+# The test VCF has two samples; use the first sample for tests
+TEST_SAMPLE = "D1326R05"
 
 # Skip integration tests when real assets are absent (e.g. CI without LFS)
 requires_real_assets = pytest.mark.skipif(
