@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "oncodriver"
+version = "1.3.0"
+description = "Filter and select driver alterations for cancer genes"
+readme = "README.md"
+license = { text = "CeCILL-B" }
+authors = [
+    { name = "Nicolas Servant", email = "nicolas.servant@curie.fr" },
+]
+requires-python = ">=3.10"
+dependencies = [
+    "cyvcf2>=0.31",
+    "pyyaml>=6.0",
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7.0", "pytest-cov"]
+lint = ["mypy", "ruff"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=oncodriver --cov-report=term-missing"
+
+[project.scripts]
+oncodriver = "oncodriver.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.package-data]
+oncodriver = ["assets/*"]

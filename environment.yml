@@ -1,13 +1,11 @@
-# You can use this file to create a conda environment for this pipeline:
-#   conda env create -f environment.yml
-name: pyTMB_new
+name: oncodriver
 channels:
   - bioconda
   - conda-forge
   - defaults
 dependencies:
-  - conda-forge::python=3.9.12
-  - bioconda::cyvcf2=0.30.15
-  - conda-forge::pyyaml=6.0
-  - bioconda::mosdepth=0.3.3
-  - bioconda::pybedtools=0.9.0
+  - conda-forge::python=3.12.8=h9e4cc4f_1_cpython
+  - bioconda::cyvcf2=0.31.1=py312h68a07e8_1
+  - conda-forge::pyyaml=6.0.2=py312h178313f_2
+  - conda-forge::numpy=2.2.2=py312h72c5963_0
+
